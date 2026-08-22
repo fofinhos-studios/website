@@ -3,3 +3,6 @@ dist/
 *.tsbuildinfo
 hero-smoke*.png
 .chrome-smoke/
+
+.vercel
+.env*
