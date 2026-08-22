@@ -1,5 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import { Footer } from "./components/Footer";
+import { GalaxyCanvas } from "./components/GalaxyCanvas";
 import { Header } from "./components/Header";
 import { Hero } from "./components/Hero";
 import { ProjectGallery } from "./components/ProjectGallery";
@@ -34,6 +35,7 @@ export function App() {
 
   return (
     <div className="site-shell">
+      <GalaxyCanvas ambient />
       <Header
         locale={locale}
         setLocale={setLocale}

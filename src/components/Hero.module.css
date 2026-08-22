@@ -5,7 +5,7 @@
   min-height: min(54rem, 100svh);
   overflow: hidden;
   place-items: center;
-  background: var(--hero-base);
+  background: transparent;
 }
 
 .hero::before,

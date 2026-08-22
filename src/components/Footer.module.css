@@ -4,7 +4,7 @@
   align-items: center;
   padding: 2rem clamp(1.25rem, 5vw, 4rem);
   border-top: 1px solid var(--line-soft);
-  background: var(--footer);
+  background: color-mix(in srgb, var(--footer) 86%, transparent);
   color: var(--ink-muted);
 }
 .people {

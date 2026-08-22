@@ -148,7 +148,7 @@ function createStars(count: number) {
   return geometry;
 }
 
-export function GalaxyCanvas() {
+export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
   const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -191,7 +191,9 @@ export function GalaxyCanvas() {
     scene.add(nebula);
 
     const stars = new THREE.Points(
-      createStars(window.innerWidth < 700 ? 760 : 2100),
+      createStars(
+        window.innerWidth < 700 ? (ambient ? 340 : 760) : ambient ? 980 : 2100,
+      ),
       new THREE.ShaderMaterial({
         uniforms: { uTime: time },
         vertexShader: starVertexShader,
@@ -203,64 +205,73 @@ export function GalaxyCanvas() {
     );
     scene.add(stars);
 
-    const heartGeometry = new THREE.ExtrudeGeometry(createHeartShape(), {
-      depth: 0.48,
-      bevelEnabled: true,
-      bevelSegments: 5,
-      bevelSize: 0.16,
-      bevelThickness: 0.16,
-      curveSegments: 48,
-    });
-    heartGeometry.center();
+    let heartGeometry: THREE.ExtrudeGeometry | undefined;
+    let camila: THREE.Group | undefined;
+    let felipe: THREE.Group | undefined;
 
-    const buildHeart = (color: string, x: number, rotation: number) => {
-      const group = new THREE.Group();
-      const core = new THREE.Mesh(
-        heartGeometry,
-        new THREE.MeshPhysicalMaterial({
-          color,
-          roughness: 0.23,
-          metalness: 0.08,
-          clearcoat: 1,
-          clearcoatRoughness: 0.1,
-          iridescence: 0.25,
-          sheen: 0.4,
-          sheenColor: new THREE.Color(color).lerp(
-            new THREE.Color("#ffffff"),
-            0.28,
-          ),
-          transmission: 0.07,
-          thickness: 1.2,
-        }),
-      );
-      const fuzz = new THREE.Mesh(
-        heartGeometry,
-        new THREE.ShaderMaterial({
-          uniforms: { uColor: { value: new THREE.Color(color) }, uTime: time },
-          vertexShader: fuzzVertexShader,
-          fragmentShader: fuzzFragmentShader,
-          transparent: true,
-          depthWrite: false,
-          side: THREE.BackSide,
-          blending: THREE.AdditiveBlending,
-        }),
-      );
-      fuzz.scale.setScalar(1.055);
-      group.add(core, fuzz);
-      group.position.set(x, -1.25, 0);
-      group.rotation.set(0.12, rotation, rotation * 0.28);
-      return group;
-    };
+    if (!ambient) {
+      heartGeometry = new THREE.ExtrudeGeometry(createHeartShape(), {
+        depth: 0.48,
+        bevelEnabled: true,
+        bevelSegments: 5,
+        bevelSize: 0.16,
+        bevelThickness: 0.16,
+        curveSegments: 48,
+      });
+      heartGeometry.center();
 
-    const camila = buildHeart("#7C3AED", -1.22, 0.37);
-    const felipe = buildHeart("#FF7A1A", 1.22, -0.37);
-    scene.add(camila, felipe);
-    scene.add(new THREE.AmbientLight("#ffffff", 1.1));
-    const purpleLight = new THREE.PointLight("#8951ff", 26, 9);
-    purpleLight.position.set(-3.4, 1.6, 3.8);
-    const orangeLight = new THREE.PointLight("#ff8134", 25, 9);
-    orangeLight.position.set(3.4, -0.5, 3.8);
-    scene.add(purpleLight, orangeLight);
+      const buildHeart = (color: string, x: number, rotation: number) => {
+        const group = new THREE.Group();
+        const core = new THREE.Mesh(
+          heartGeometry,
+          new THREE.MeshPhysicalMaterial({
+            color,
+            roughness: 0.23,
+            metalness: 0.08,
+            clearcoat: 1,
+            clearcoatRoughness: 0.1,
+            iridescence: 0.25,
+            sheen: 0.4,
+            sheenColor: new THREE.Color(color).lerp(
+              new THREE.Color("#ffffff"),
+              0.28,
+            ),
+            transmission: 0.07,
+            thickness: 1.2,
+          }),
+        );
+        const fuzz = new THREE.Mesh(
+          heartGeometry,
+          new THREE.ShaderMaterial({
+            uniforms: {
+              uColor: { value: new THREE.Color(color) },
+              uTime: time,
+            },
+            vertexShader: fuzzVertexShader,
+            fragmentShader: fuzzFragmentShader,
+            transparent: true,
+            depthWrite: false,
+            side: THREE.BackSide,
+            blending: THREE.AdditiveBlending,
+          }),
+        );
+        fuzz.scale.setScalar(1.055);
+        group.add(core, fuzz);
+        group.position.set(x, -1.25, 0);
+        group.rotation.set(0.12, rotation, rotation * 0.28);
+        return group;
+      };
+
+      camila = buildHeart("#7C3AED", -1.22, 0.37);
+      felipe = buildHeart("#FF7A1A", 1.22, -0.37);
+      scene.add(camila, felipe);
+      scene.add(new THREE.AmbientLight("#ffffff", 1.1));
+      const purpleLight = new THREE.PointLight("#8951ff", 26, 9);
+      purpleLight.position.set(-3.4, 1.6, 3.8);
+      const orangeLight = new THREE.PointLight("#ff8134", 25, 9);
+      orangeLight.position.set(3.4, -0.5, 3.8);
+      scene.add(purpleLight, orangeLight);
+    }
 
     const resize = () => {
       const { width, height } = host.getBoundingClientRect();
@@ -284,13 +295,15 @@ export function GalaxyCanvas() {
       }
       const elapsed = reducedMotion ? 4.2 : clock.getElapsedTime();
       time.value = elapsed;
-      const embrace = Math.sin(elapsed * 0.35) * 0.12;
-      camila.position.x = -1.22 + embrace;
-      felipe.position.x = 1.22 - embrace;
-      camila.position.y = -1.25 + Math.sin(elapsed * 0.48) * 0.09;
-      felipe.position.y = -1.25 + Math.cos(elapsed * 0.44) * 0.09;
-      camila.rotation.y = 0.37 + Math.sin(elapsed * 0.35) * 0.1;
-      felipe.rotation.y = -0.37 - Math.sin(elapsed * 0.35) * 0.1;
+      if (camila && felipe) {
+        const embrace = Math.sin(elapsed * 0.35) * 0.12;
+        camila.position.x = -1.22 + embrace;
+        felipe.position.x = 1.22 - embrace;
+        camila.position.y = -1.25 + Math.sin(elapsed * 0.48) * 0.09;
+        felipe.position.y = -1.25 + Math.cos(elapsed * 0.44) * 0.09;
+        camila.rotation.y = 0.37 + Math.sin(elapsed * 0.35) * 0.1;
+        felipe.rotation.y = -0.37 - Math.sin(elapsed * 0.35) * 0.1;
+      }
       stars.rotation.z = elapsed * 0.012;
       renderer.render(scene, camera);
       animationFrame = reducedMotion ? 0 : requestAnimationFrame(animate);
@@ -303,7 +316,7 @@ export function GalaxyCanvas() {
       cancelAnimationFrame(animationFrame);
       observer.disconnect();
       window.removeEventListener("resize", resize);
-      heartGeometry.dispose();
+      heartGeometry?.dispose();
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
           object.geometry.dispose();
@@ -320,5 +333,11 @@ export function GalaxyCanvas() {
     };
   }, []);
 
-  return <div className={styles.canvas} ref={hostRef} aria-hidden="true" />;
+  return (
+    <div
+      className={`${styles.canvas} ${ambient ? styles.ambient : ""}`}
+      ref={hostRef}
+      aria-hidden="true"
+    />
+  );
 }

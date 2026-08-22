@@ -14,7 +14,7 @@
       color-mix(in srgb, var(--violet) 13%, transparent),
       transparent 30rem
     ),
-    var(--surface);
+    color-mix(in srgb, var(--surface) 82%, transparent);
 }
 
 .projects::before {

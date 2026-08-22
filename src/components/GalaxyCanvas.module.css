@@ -5,6 +5,12 @@
   pointer-events: none;
 }
 
+.ambient {
+  position: fixed;
+  z-index: 0;
+  background: var(--surface);
+}
+
 .canvas canvas {
   display: block;
   width: 100%;
