@@ -26,7 +26,7 @@ export const copy: Record<Locale, Copy> = {
     heroCta: "Projects",
     visitProject: "Visit project",
     camilaRole: "Camila · Designer",
-    felipeRole: "Felipe · Programmer",
+    felipeRole: "Felipe · Developer",
     githubLabel: "Visit Fofinhos Studio on GitHub",
     linkedinLabel: "Visit LinkedIn",
   },
