@@ -1,0 +1,86 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Sora:wght@400;500;600;700&display=swap");
+
+:root {
+  font-family: "Sora", sans-serif;
+  color: #fff8f2;
+  background: #120c22;
+  color-scheme: dark;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Sora", Arial, sans-serif;
+  --violet: #7c3aed;
+  --orange: #ff7a1a;
+  --focus: #ffb26c;
+  --hero-base: #120c22;
+  --hero-ink: #fff8f2;
+  --hero-ink-soft: #e6ddff;
+  --hero-muted: #c9b9df;
+  --surface: #160e27;
+  --footer: #100a1c;
+  --ink: #fff8f2;
+  --ink-muted: #bbb0c8;
+  --ink-faint: #847893;
+  --accent-ink: #ffae75;
+  --glass: rgb(30 20 49 / 60%);
+  --control-hover: rgb(255 255 255 / 12%);
+  --line-soft: rgb(235 222 255 / 17%);
+  --card-line: rgb(239 226 255 / 13%);
+  --card: rgb(34 23 53 / 88%);
+  --shadow-soft: rgb(0 0 0 / 17%);
+  --shadow-strong: rgb(0 0 0 / 31%);
+  --star-dust: rgb(237 224 255 / 36%);
+}
+
+:root[data-theme="light"] {
+  color: #281537;
+  background: #fff8f2;
+  color-scheme: light;
+  --focus: #773be1;
+  --hero-base: #e8dff9;
+  --hero-ink: #2e1740;
+  --hero-ink-soft: #4d3a5b;
+  --hero-muted: #6f587b;
+  --surface: #fff8f2;
+  --footer: #f5edf8;
+  --ink: #281537;
+  --ink-muted: #66566d;
+  --ink-faint: #9c8ba2;
+  --accent-ink: #a6440d;
+  --glass: rgb(255 250 252 / 65%);
+  --control-hover: rgb(99 53 160 / 10%);
+  --line-soft: rgb(67 38 92 / 15%);
+  --card-line: rgb(71 35 101 / 13%);
+  --card: rgb(255 255 255 / 73%);
+  --shadow-soft: rgb(73 38 94 / 9%);
+  --shadow-strong: rgb(73 38 94 / 17%);
+  --star-dust: rgb(102 64 137 / 26%);
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  min-width: 320px;
+  margin: 0;
+  background: var(--surface);
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+::selection {
+  color: #fff;
+  background: var(--violet);
+}
+.eyebrow {
+  color: var(--accent-ink);
+  font: 700 0.66rem / 1 var(--font-sans);
+  letter-spacing: 0.15em;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

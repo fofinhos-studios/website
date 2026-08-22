@@ -1,2 +1,2 @@
 # website
-Our website to showcase our projects 💜🧡
+Website for our projects 💜🧡
