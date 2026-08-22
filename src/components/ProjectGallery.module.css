@@ -2,11 +2,6 @@
   position: relative;
   padding: clamp(5.5rem, 11vw, 10rem) clamp(1.25rem, 5vw, 4rem)
     clamp(5rem, 10vw, 8rem);
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--surface) 34%, transparent),
-    color-mix(in srgb, var(--surface) 56%, transparent)
-  );
 }
 
 .grid {
