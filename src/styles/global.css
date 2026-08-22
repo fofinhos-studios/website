@@ -15,7 +15,6 @@
   --hero-ink-soft: #e6ddff;
   --hero-muted: #c9b9df;
   --surface: #160e27;
-  --footer: #100a1c;
   --ink: #fff8f2;
   --ink-muted: #bbb0c8;
   --ink-faint: #847893;
@@ -40,7 +39,6 @@
   --hero-ink-soft: #4d3a5b;
   --hero-muted: #6f587b;
   --surface: #fff8f2;
-  --footer: #f5edf8;
   --ink: #281537;
   --ink-muted: #66566d;
   --ink-faint: #9c8ba2;
@@ -73,8 +71,7 @@ body {
   overflow: clip;
 }
 .site-shell > header,
-.site-shell > main,
-.site-shell > footer {
+.site-shell > main {
   position: relative;
   z-index: 1;
 }

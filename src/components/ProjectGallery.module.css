@@ -27,19 +27,28 @@
 }
 
 .card {
+  display: block;
   overflow: hidden;
   min-height: 31rem;
   border: 1px solid var(--card-line);
   border-radius: 1.35rem;
+  color: inherit;
   background: var(--card);
   box-shadow: 0 1.5rem 4rem var(--shadow-soft);
+  cursor: pointer;
+  text-decoration: none;
   transition:
     transform 260ms ease,
     box-shadow 260ms ease;
 }
-.card:hover {
+.card:hover,
+.card:focus-visible {
   transform: translateY(-0.42rem);
   box-shadow: 0 2.1rem 4.4rem var(--shadow-strong);
+}
+.card:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
 }
 
 .placeholder {
@@ -176,21 +185,6 @@
   margin: 0.85rem 0 1.35rem;
   color: var(--ink-muted);
   font: 400 0.92rem / 1.55 var(--font-sans);
-}
-.card a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--ink);
-  font: 700 0.77rem / 1 var(--font-sans);
-  text-decoration: none;
-}
-.card a:hover {
-  color: var(--accent-ink);
-}
-.card a:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 4px;
 }
 .repo {
   position: absolute;

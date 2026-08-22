@@ -84,6 +84,7 @@ const fuzzVertexShader = /* glsl */ `
 const fuzzFragmentShader = /* glsl */ `
   uniform vec3 uColor;
   uniform float uTime;
+  uniform float uGlow;
   varying vec3 vNormal;
   varying vec3 vWorldPosition;
   float hash(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
@@ -92,9 +93,21 @@ const fuzzFragmentShader = /* glsl */ `
     float rim = pow(1.0 - abs(dot(normalize(vNormal), viewDirection)), 2.1);
     float fleck = hash(floor(vWorldPosition * 24.0) + uTime * 0.05);
     float fuzz = step(0.36, fleck) * smoothstep(0.08, 0.7, rim);
-    gl_FragColor = vec4(uColor * (0.45 + rim), fuzz * 0.32);
+    gl_FragColor = vec4(
+      uColor * (0.45 + rim * (0.64 + uGlow * 0.36)),
+      fuzz * (0.2 + uGlow * 0.12)
+    );
   }
 `;
+
+type Heart = {
+  core: THREE.Mesh;
+  coreMaterial: THREE.MeshPhysicalMaterial;
+  fuzzMaterial: THREE.ShaderMaterial;
+  group: THREE.Group;
+  hovered: boolean;
+  hoverAmount: number;
+};
 
 const mulberry32 = (seed: number) => () => {
   seed += 0x6d2b79f5;
@@ -211,6 +224,9 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
     let heartGeometry: THREE.ExtrudeGeometry | undefined;
     let camila: THREE.Group | undefined;
     let felipe: THREE.Group | undefined;
+    const hearts: Heart[] = [];
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
 
     if (!ambient) {
       heartGeometry = new THREE.ExtrudeGeometry(createHeartShape(), {
@@ -225,48 +241,57 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
 
       const buildHeart = (color: string, x: number, rotation: number) => {
         const group = new THREE.Group();
-        const core = new THREE.Mesh(
-          heartGeometry,
-          new THREE.MeshPhysicalMaterial({
-            color,
-            roughness: 0.23,
-            metalness: 0.08,
-            clearcoat: 1,
-            clearcoatRoughness: 0.1,
-            iridescence: 0.25,
-            sheen: 0.4,
-            sheenColor: new THREE.Color(color).lerp(
-              new THREE.Color("#ffffff"),
-              0.28,
-            ),
-            transmission: 0.07,
-            thickness: 1.2,
-          }),
-        );
-        const fuzz = new THREE.Mesh(
-          heartGeometry,
-          new THREE.ShaderMaterial({
-            uniforms: {
-              uColor: { value: new THREE.Color(color) },
-              uTime: time,
-            },
-            vertexShader: fuzzVertexShader,
-            fragmentShader: fuzzFragmentShader,
-            transparent: true,
-            depthWrite: false,
-            side: THREE.BackSide,
-            blending: THREE.AdditiveBlending,
-          }),
-        );
+        const coreMaterial = new THREE.MeshPhysicalMaterial({
+          color,
+          roughness: 0.23,
+          metalness: 0.08,
+          clearcoat: 1,
+          clearcoatRoughness: 0.1,
+          iridescence: 0.25,
+          sheen: 0.4,
+          sheenColor: new THREE.Color(color).lerp(
+            new THREE.Color("#ffffff"),
+            0.28,
+          ),
+          emissive: new THREE.Color(color),
+          emissiveIntensity: 0.06,
+          transmission: 0.07,
+          thickness: 1.2,
+        });
+        const core = new THREE.Mesh(heartGeometry, coreMaterial);
+        const fuzzMaterial = new THREE.ShaderMaterial({
+          uniforms: {
+            uColor: { value: new THREE.Color(color) },
+            uTime: time,
+            uGlow: { value: 1 },
+          },
+          vertexShader: fuzzVertexShader,
+          fragmentShader: fuzzFragmentShader,
+          transparent: true,
+          depthWrite: false,
+          side: THREE.BackSide,
+          blending: THREE.AdditiveBlending,
+        });
+        const fuzz = new THREE.Mesh(heartGeometry, fuzzMaterial);
         fuzz.scale.setScalar(1.055);
         group.add(core, fuzz);
         group.position.set(x, -1.25, 0);
         group.rotation.set(0.12, rotation, rotation * 0.28);
-        return group;
+        return {
+          group,
+          core,
+          coreMaterial,
+          fuzzMaterial,
+          hovered: false,
+          hoverAmount: 0,
+        };
       };
 
-      camila = buildHeart("#7C3AED", -1.22, 0.37);
-      felipe = buildHeart("#FF7A1A", 1.22, -0.37);
+      const camilaHeart = buildHeart("#7C3AED", -1.22, 0.37);
+      const felipeHeart = buildHeart("#FF7A1A", 1.22, -0.37);
+      ({ group: camila } = camilaHeart);
+      ({ group: felipe } = felipeHeart);
+      hearts.push(camilaHeart, felipeHeart);
       scene.add(camila, felipe);
       scene.add(new THREE.AmbientLight("#ffffff", 1.1));
       const purpleLight = new THREE.PointLight("#8951ff", 26, 9);
@@ -291,6 +316,36 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
       }
     };
     resize();
+
+    const updateHoveredHeart = (event: PointerEvent) => {
+      if (reducedMotion || !hearts.length) return;
+      const bounds = renderer.domElement.getBoundingClientRect();
+      pointer.set(
+        ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
+        -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
+      );
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObjects(
+        hearts.map(({ core }) => core),
+        false,
+      )[0]?.object;
+      hearts.forEach((heart) => {
+        heart.hovered = heart.core === hit;
+      });
+      renderer.domElement.style.cursor = hit ? "pointer" : "";
+    };
+    const clearHoveredHeart = () => {
+      hearts.forEach((heart) => {
+        heart.hovered = false;
+      });
+      renderer.domElement.style.cursor = "";
+    };
+
+    if (!ambient) {
+      renderer.domElement.addEventListener("pointermove", updateHoveredHeart);
+      renderer.domElement.addEventListener("pointerleave", clearHoveredHeart);
+    }
+
     const observer = new IntersectionObserver(([entry]) => {
       active = entry.isIntersecting;
       if (active && !reducedMotion && !animationFrame) animate();
@@ -304,7 +359,8 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
         animationFrame = 0;
         return;
       }
-      const elapsed = reducedMotion ? 4.2 : clock.getElapsedTime();
+      const delta = reducedMotion ? 0 : Math.min(clock.getDelta(), 0.05);
+      const elapsed = reducedMotion ? 4.2 : clock.elapsedTime;
       time.value = elapsed;
       if (camila && felipe) {
         const embrace = Math.sin(elapsed * 0.35) * 0.12;
@@ -315,6 +371,22 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
         camila.rotation.y = 0.37 + Math.sin(elapsed * 0.35) * 0.1;
         felipe.rotation.y = -0.37 - Math.sin(elapsed * 0.35) * 0.1;
       }
+      hearts.forEach((heart) => {
+        heart.hoverAmount = THREE.MathUtils.damp(
+          heart.hoverAmount,
+          heart.hovered ? 1 : 0,
+          heart.hovered ? 11 : 7,
+          delta,
+        );
+        const easedHover = THREE.MathUtils.smootherstep(
+          heart.hoverAmount,
+          0,
+          1,
+        );
+        heart.group.scale.setScalar(1 + easedHover * 0.14);
+        heart.coreMaterial.emissiveIntensity = 0.06 + easedHover * 0.34;
+        heart.fuzzMaterial.uniforms.uGlow.value = 1 + easedHover * 1.25;
+      });
       if (stars) stars.rotation.z = elapsed * 0.012;
       renderer.render(scene, camera);
       animationFrame = reducedMotion ? 0 : requestAnimationFrame(animate);
@@ -327,6 +399,14 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
       cancelAnimationFrame(animationFrame);
       observer.disconnect();
       window.removeEventListener("resize", resize);
+      renderer.domElement.removeEventListener(
+        "pointermove",
+        updateHoveredHeart,
+      );
+      renderer.domElement.removeEventListener(
+        "pointerleave",
+        clearHoveredHeart,
+      );
       heartGeometry?.dispose();
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
@@ -346,7 +426,7 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
 
   return (
     <div
-      className={`${styles.canvas} ${ambient ? styles.ambient : ""}`}
+      className={`${styles.canvas} ${ambient ? styles.ambient : styles.interactive}`}
       ref={hostRef}
       aria-hidden="true"
     />

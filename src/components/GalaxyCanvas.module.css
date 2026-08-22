@@ -5,6 +5,10 @@
   pointer-events: none;
 }
 
+.interactive[data-ready="true"] {
+  pointer-events: auto;
+}
+
 .ambient {
   position: fixed;
   z-index: 0;

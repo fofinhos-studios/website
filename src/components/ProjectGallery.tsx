@@ -1,4 +1,3 @@
-import { ArrowUpRightIcon } from "@phosphor-icons/react";
 import { copy, type Locale, projects } from "../content";
 import styles from "./ProjectGallery.module.css";
 
@@ -37,7 +36,14 @@ export function ProjectGallery({ locale }: { locale: Locale }) {
       </h2>
       <div className={styles.grid}>
         {projects.map((project) => (
-          <article className={styles.card} key={project.id}>
+          <a
+            className={styles.card}
+            href={project.url}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`${text.visitProject}: ${project.title}`}
+            key={project.id}
+          >
             <ProjectPlaceholder accent={project.accent} title={project.title} />
             <div className={styles.cardBody}>
               <p className={styles.tag}>{project.tag[locale]}</p>
@@ -45,13 +51,9 @@ export function ProjectGallery({ locale }: { locale: Locale }) {
               <p className={styles.description}>
                 {project.description[locale]}
               </p>
-              <a href={project.url} target="_blank" rel="noreferrer">
-                {text.visitProject}
-                <ArrowUpRightIcon size={17} weight="bold" aria-hidden="true" />
-              </a>
               <span className={styles.repo}>/{project.repository}</span>
             </div>
-          </article>
+          </a>
         ))}
       </div>
     </section>

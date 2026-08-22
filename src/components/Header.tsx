@@ -1,4 +1,9 @@
-import { MoonStarsIcon, SunIcon, TranslateIcon } from "@phosphor-icons/react";
+import {
+  GithubLogoIcon,
+  MoonStarsIcon,
+  SunIcon,
+  TranslateIcon,
+} from "@phosphor-icons/react";
 import type { Dispatch, StateUpdater } from "preact/hooks";
 import { copy, type Locale } from "../content";
 import styles from "./Header.module.css";
@@ -23,7 +28,17 @@ export function Header({ locale, setLocale, theme, setTheme }: HeaderProps) {
         <span aria-hidden="true">🧡</span>
         <span className={styles.srOnly}>Fofinhos Studio</span>
       </a>
-      <nav className={styles.controls} aria-label="Site controls">
+      <nav className={styles.controls} aria-label="Site links and controls">
+        <a
+          className={styles.iconButton}
+          href="https://github.com/fofinhos-studios"
+          target="_blank"
+          rel="noreferrer"
+          aria-label={text.githubLabel}
+          title={text.githubLabel}
+        >
+          <GithubLogoIcon size={18} weight="fill" aria-hidden="true" />
+        </a>
         <button
           type="button"
           className={styles.iconButton}

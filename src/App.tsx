@@ -1,5 +1,4 @@
 import { useEffect, useState } from "preact/hooks";
-import { Footer } from "./components/Footer";
 import { GalaxyCanvas } from "./components/GalaxyCanvas";
 import { Header } from "./components/Header";
 import { Hero } from "./components/Hero";
@@ -46,7 +45,6 @@ export function App() {
         <Hero locale={locale} />
         <ProjectGallery locale={locale} />
       </main>
-      <Footer locale={locale} />
     </div>
   );
 }
