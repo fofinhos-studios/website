@@ -177,33 +177,36 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
     host.appendChild(renderer.domElement);
 
     const time = { value: 0 };
-    const nebula = new THREE.Mesh(
-      new THREE.PlaneGeometry(34, 24),
-      new THREE.ShaderMaterial({
-        uniforms: { uTime: time },
-        vertexShader: nebulaVertexShader,
-        fragmentShader: nebulaFragmentShader,
-        transparent: true,
-        depthWrite: false,
-      }),
-    );
-    nebula.position.z = -14;
-    scene.add(nebula);
+    let nebula: THREE.Mesh | undefined;
+    let stars: THREE.Points | undefined;
 
-    const stars = new THREE.Points(
-      createStars(
-        window.innerWidth < 700 ? (ambient ? 340 : 760) : ambient ? 980 : 2100,
-      ),
-      new THREE.ShaderMaterial({
-        uniforms: { uTime: time },
-        vertexShader: starVertexShader,
-        fragmentShader: starFragmentShader,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
-    scene.add(stars);
+    if (ambient) {
+      nebula = new THREE.Mesh(
+        new THREE.PlaneGeometry(34, 24),
+        new THREE.ShaderMaterial({
+          uniforms: { uTime: time },
+          vertexShader: nebulaVertexShader,
+          fragmentShader: nebulaFragmentShader,
+          transparent: true,
+          depthWrite: false,
+        }),
+      );
+      nebula.position.z = -14;
+      scene.add(nebula);
+
+      stars = new THREE.Points(
+        createStars(window.innerWidth < 700 ? 340 : 980),
+        new THREE.ShaderMaterial({
+          uniforms: { uTime: time },
+          vertexShader: starVertexShader,
+          fragmentShader: starFragmentShader,
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        }),
+      );
+      scene.add(stars);
+    }
 
     let heartGeometry: THREE.ExtrudeGeometry | undefined;
     let camila: THREE.Group | undefined;
@@ -278,6 +281,14 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
+      if (nebula) {
+        const distance = camera.position.z - nebula.position.z;
+        const visibleHeight =
+          2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * distance;
+        const visibleWidth = visibleHeight * camera.aspect;
+        const scale = Math.max(visibleWidth / 34, visibleHeight / 24) * 1.08;
+        nebula.scale.setScalar(scale);
+      }
     };
     resize();
     const observer = new IntersectionObserver(([entry]) => {
@@ -304,7 +315,7 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
         camila.rotation.y = 0.37 + Math.sin(elapsed * 0.35) * 0.1;
         felipe.rotation.y = -0.37 - Math.sin(elapsed * 0.35) * 0.1;
       }
-      stars.rotation.z = elapsed * 0.012;
+      if (stars) stars.rotation.z = elapsed * 0.012;
       renderer.render(scene, camera);
       animationFrame = reducedMotion ? 0 : requestAnimationFrame(animate);
     };
