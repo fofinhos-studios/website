@@ -1,31 +1,12 @@
 .projects {
   position: relative;
-  overflow: hidden;
   padding: clamp(5.5rem, 11vw, 10rem) clamp(1.25rem, 5vw, 4rem)
     clamp(5rem, 10vw, 8rem);
-  background:
-    radial-gradient(
-      circle at 88% 2%,
-      color-mix(in srgb, var(--orange) 12%, transparent),
-      transparent 24rem
-    ),
-    radial-gradient(
-      circle at 8% 22%,
-      color-mix(in srgb, var(--violet) 13%, transparent),
-      transparent 30rem
-    ),
-    color-mix(in srgb, var(--surface) 82%, transparent);
-}
-
-.projects::before {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(var(--star-dust) 0.7px, transparent 0.7px);
-  background-size: 17px 17px;
-  content: "";
-  mask-image: linear-gradient(to bottom, black, transparent 60%);
-  opacity: 0.45;
-  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--surface) 34%, transparent),
+    color-mix(in srgb, var(--surface) 56%, transparent)
+  );
 }
 
 .grid {
