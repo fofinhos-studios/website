@@ -3,7 +3,6 @@
   isolation: isolate;
   display: grid;
   min-height: min(54rem, 100svh);
-  overflow: hidden;
   place-items: center;
   background: transparent;
 }
