@@ -38,7 +38,7 @@ const nebulaFragmentShader = /* glsl */ `
     vec3 orange = vec3(0.75, 0.17, 0.05);
     vec3 galaxy = mix(violet, orange, smoothstep(-0.55, 0.65, uv.x + sin(uv.y * 4.0) * 0.16));
     float grain = hash(gl_FragCoord.xy + uTime) - 0.5;
-    gl_FragColor = vec4(ink + galaxy * plume * 0.58 + grain * 0.018, 0.92);
+    gl_FragColor = vec4(ink + galaxy * plume * 0.24 + grain * 0.018, 0.92);
   }
 `;
 

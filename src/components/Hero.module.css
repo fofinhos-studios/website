@@ -12,26 +12,23 @@
 .hero::after {
   position: absolute;
   z-index: 1;
-  inset: auto;
-  width: 38vw;
-  height: 38vw;
-  max-width: 34rem;
-  max-height: 34rem;
+  top: 67%;
+  width: clamp(18rem, 30vw, 34rem);
+  height: clamp(18rem, 30vw, 34rem);
   border-radius: 50%;
   content: "";
-  filter: blur(4rem);
-  opacity: 0.34;
+  filter: blur(4.5rem);
+  opacity: 0.5;
   pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
 .hero::before {
-  top: 20%;
-  left: 10%;
+  left: 42%;
   background: var(--violet);
 }
 .hero::after {
-  right: 10%;
-  bottom: 15%;
+  left: 58%;
   background: var(--orange);
 }
 
@@ -140,6 +137,18 @@ h1 {
     top: 58%;
     gap: 0.8rem;
     transform: scale(0.74);
+  }
+  .hero::before,
+  .hero::after {
+    top: 63%;
+    width: min(68vw, 24rem);
+    height: min(68vw, 24rem);
+  }
+  .hero::before {
+    left: 38%;
+  }
+  .hero::after {
+    left: 62%;
   }
 }
 
