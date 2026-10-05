@@ -24,21 +24,31 @@ const nebulaFragmentShader = /* glsl */ `
   float fbm(vec2 p) {
     float v = 0.0;
     float a = 0.5;
-    for (int i = 0; i < 4; i++) { v += a * noise(p); p = p * 2.03 + 9.4; a *= 0.5; }
+    for (int i = 0; i < 3; i++) { v += a * noise(p); p = p * 2.03 + 9.4; a *= 0.5; }
     return v;
   }
   void main() {
     vec2 uv = vUv - 0.5;
-    float drift = uTime * 0.012;
-    float n1 = fbm(uv * 3.3 + vec2(drift, -drift * 0.4));
-    float n2 = fbm((uv + n1 * 0.13) * 4.5 - vec2(drift * 0.6, drift));
-    float plume = smoothstep(0.38, 0.78, n2) * (1.0 - smoothstep(0.22, 0.85, length(uv)));
-    vec3 ink = vec3(0.035, 0.018, 0.09);
-    vec3 violet = vec3(0.28, 0.08, 0.52);
-    vec3 orange = vec3(0.75, 0.17, 0.05);
-    vec3 galaxy = mix(violet, orange, smoothstep(-0.55, 0.65, uv.x + sin(uv.y * 4.0) * 0.16));
-    float grain = hash(gl_FragCoord.xy + uTime) - 0.5;
-    gl_FragColor = vec4(ink + galaxy * plume * 0.24 + grain * 0.018, 0.92);
+    float drift = uTime * 0.005;
+    vec2 warp = vec2(
+      fbm(uv * 3.0 + vec2(drift, 2.4)),
+      noise(uv * 3.0 + vec2(5.7, -drift))
+    ) - 0.5;
+    vec2 p = uv + warp * 0.17;
+    float cloud = smoothstep(0.4, 0.72, fbm(p * 4.2));
+    float detail = fbm(p * 11.0 + vec2(3.1, 8.7));
+    float filaments = pow(max(0.0, 1.0 - abs(detail - 0.62) * 8.0), 2.0);
+    float dust = smoothstep(0.55, 0.75, noise(p * 6.0 + 14.2));
+    float shape = max(0.0, cloud * 0.35 + filaments * 0.65 - dust * 0.3);
+    float darkCenter = smoothstep(0.1, 0.34, length(uv * vec2(1.1, 0.85)));
+    float violet = (1.0 - smoothstep(0.18, 0.68, length(uv - vec2(-0.43, 0.06)))) * darkCenter;
+    float amber = (1.0 - smoothstep(0.14, 0.64, length(uv - vec2(0.44, -0.13)))) * darkCenter;
+    vec3 ink = vec3(0.004, 0.004, 0.009);
+    vec3 color = ink + shape * (
+      vec3(0.23, 0.09, 0.42) * violet * 0.22 +
+      vec3(0.5, 0.16, 0.06) * amber * 0.17
+    );
+    gl_FragColor = vec4(color, 1.0);
   }
 `;
 
@@ -51,9 +61,9 @@ const starVertexShader = /* glsl */ `
   varying vec3 vColor;
   void main() {
     vColor = aColor;
-    vTwinkle = 0.62 + 0.38 * sin(uTime * (0.55 + aPhase * 0.3) + aPhase * 22.0);
+    vTwinkle = 0.9 + 0.1 * sin(uTime * (0.35 + aPhase * 0.25) + aPhase * 22.0);
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = aSize * vTwinkle * (100.0 / -mvPosition.z);
+    gl_PointSize = max(1.0, aSize * (18.0 / -mvPosition.z));
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -64,9 +74,9 @@ const starFragmentShader = /* glsl */ `
   void main() {
     vec2 point = gl_PointCoord - vec2(0.5);
     float d = length(point);
-    float soft = smoothstep(0.5, 0.0, d);
-    float core = smoothstep(0.19, 0.0, d);
-    gl_FragColor = vec4(vColor * (soft + core * 1.6) * vTwinkle, soft * vTwinkle);
+    float soft = 1.0 - smoothstep(0.08, 0.5, d);
+    float core = 1.0 - smoothstep(0.0, 0.16, d);
+    gl_FragColor = vec4(vColor, soft * (0.28 + core * 0.32) * vTwinkle);
   }
 `;
 
@@ -83,19 +93,16 @@ const fuzzVertexShader = /* glsl */ `
 
 const fuzzFragmentShader = /* glsl */ `
   uniform vec3 uColor;
-  uniform float uTime;
   uniform float uGlow;
   varying vec3 vNormal;
   varying vec3 vWorldPosition;
-  float hash(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
   void main() {
     vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
     float rim = pow(1.0 - abs(dot(normalize(vNormal), viewDirection)), 2.1);
-    float fleck = hash(floor(vWorldPosition * 24.0) + uTime * 0.05);
-    float fuzz = step(0.36, fleck) * smoothstep(0.08, 0.7, rim);
+    float halo = smoothstep(0.08, 0.85, rim);
     gl_FragColor = vec4(
-      uColor * (0.45 + rim * (0.64 + uGlow * 0.36)),
-      fuzz * (0.2 + uGlow * 0.12)
+      uColor,
+      halo * (0.07 + uGlow * 0.04)
     );
   }
 `;
@@ -127,29 +134,135 @@ function createHeartShape() {
   return heart;
 }
 
+function createPuffyHeartGeometry() {
+  const outline = createHeartShape().getPoints(48);
+  if (outline[0].equals(outline[outline.length - 1])) outline.pop();
+  if (THREE.ShapeUtils.isClockWise(outline)) outline.reverse();
+
+  const bounds = new THREE.Box2().setFromPoints(outline);
+  const center = bounds.getCenter(new THREE.Vector2());
+  const size = bounds.getSize(new THREE.Vector2());
+  const perimeter = outline.reduce(
+    (length, point, index) =>
+      length + point.distanceTo(outline[(index + 1) % outline.length]),
+    0,
+  );
+  const startAngle = Math.atan2(
+    outline[0].y - center.y,
+    outline[0].x - center.x,
+  );
+  let distance = 0;
+  const roundedOutline = outline.map((point, index) => {
+    const angle = startAngle + (Math.PI * 2 * distance) / perimeter;
+    distance += point.distanceTo(outline[(index + 1) % outline.length]);
+    return new THREE.Vector2(
+      Math.cos(angle) * size.x * 0.5,
+      Math.sin(angle) * size.y * 0.5,
+    );
+  });
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  const rings = 32;
+  const depth = 0.72;
+
+  for (let ring = 1; ring < rings; ring += 1) {
+    const angle = -Math.PI / 2 + (Math.PI * ring) / rings;
+    const width = Math.cos(angle);
+    const heartShape = width ** 4;
+    const z = depth * Math.sin(angle);
+    for (let index = 0; index < outline.length; index += 1) {
+      const point = outline[index];
+      const rounded = roundedOutline[index];
+      const x =
+        THREE.MathUtils.lerp(rounded.x, point.x - center.x, heartShape) * width;
+      const y =
+        THREE.MathUtils.lerp(rounded.y, point.y - center.y, heartShape) * width;
+      positions.push(x, y, z);
+      uvs.push(x / size.x + 0.5, y / size.y + 0.5);
+    }
+  }
+
+  const count = outline.length;
+  for (let ring = 0; ring < rings - 2; ring += 1) {
+    for (let point = 0; point < count; point += 1) {
+      const next = (point + 1) % count;
+      const a = ring * count + point;
+      const b = ring * count + next;
+      const c = a + count;
+      const d = b + count;
+      indices.push(a, b, c, b, d, c);
+    }
+  }
+
+  const back = positions.length / 3;
+  positions.push(0, 0, -depth, 0, 0, depth);
+  uvs.push(0.5, 0.5, 0.5, 0.5);
+  const front = back + 1;
+  const lastRing = (rings - 2) * count;
+  for (let point = 0; point < count; point += 1) {
+    const next = (point + 1) % count;
+    indices.push(back, next, point);
+    indices.push(lastRing + point, lastRing + next, front);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(positions, 3),
+  );
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function createVelvetTexture() {
+  const random = mulberry32(41);
+  const noise = Float32Array.from({ length: 32 * 32 }, random);
+  const pixels = new Uint8Array(128 * 128 * 4);
+  for (let y = 0; y < 128; y += 1) {
+    for (let x = 0; x < 128; x += 1) {
+      const cellX = Math.floor(x / 4);
+      const cellY = Math.floor(y / 4);
+      const blendX = THREE.MathUtils.smoothstep((x % 4) / 4, 0, 1);
+      const blendY = THREE.MathUtils.smoothstep((y % 4) / 4, 0, 1);
+      const sample = (dx: number, dy: number) =>
+        noise[((cellY + dy) % 32) * 32 + ((cellX + dx) % 32)];
+      const top = THREE.MathUtils.lerp(sample(0, 0), sample(1, 0), blendX);
+      const bottom = THREE.MathUtils.lerp(sample(0, 1), sample(1, 1), blendX);
+      const shade =
+        237 + Math.round(18 * THREE.MathUtils.lerp(top, bottom, blendY));
+      pixels.set([shade, shade, shade, 255], (y * 128 + x) * 4);
+    }
+  }
+  const texture = new THREE.DataTexture(pixels, 128, 128);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 function createStars(count: number) {
   const random = mulberry32(22);
   const positions = new Float32Array(count * 3);
   const sizes = new Float32Array(count);
   const phases = new Float32Array(count);
   const colors = new Float32Array(count * 3);
-  const violet = new THREE.Color("#b7a2ff");
-  const orange = new THREE.Color("#ffc093");
-  const white = new THREE.Color("#fff7e6");
+  const cool = new THREE.Color("#dce5ff");
+  const warm = new THREE.Color("#ffe9d2");
+  const white = new THREE.Color("#f4f3f8");
 
   for (let index = 0; index < count; index += 1) {
-    const arm = index % 2;
-    const radius = 1.5 + random() ** 0.54 * 9;
-    const angle = radius * 0.74 + arm * Math.PI + (random() - 0.5) * 1.35;
-    const spread = (random() - 0.5) * (0.25 + radius * 0.19);
     const offset = index * 3;
-    positions[offset] = Math.cos(angle) * radius + spread;
-    positions[offset + 1] =
-      Math.sin(angle) * radius * 0.47 + (random() - 0.5) * 2.8;
+    positions[offset] = (random() - 0.5) * 20;
+    positions[offset + 1] = (random() - 0.5) * 13;
     positions[offset + 2] = -4 - random() * 10;
-    sizes[index] = 1.2 + random() * random() * 4.6;
+    sizes[index] = 1 + random() ** 5 * 2.8;
     phases[index] = random();
-    const color = index % 5 === 0 ? orange : index % 3 === 0 ? violet : white;
+    const color = index % 12 === 0 ? warm : index % 9 === 0 ? cool : white;
     colors.set([color.r, color.g, color.b], offset);
   }
 
@@ -183,7 +296,9 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
       antialias: true,
       powerPreference: "high-performance",
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, ambient ? 1.6 : 2),
+    );
     renderer.setClearColor(0x000000, 0);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.35;
@@ -208,7 +323,7 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
       scene.add(nebula);
 
       stars = new THREE.Points(
-        createStars(window.innerWidth < 700 ? 340 : 980),
+        createStars(window.innerWidth < 700 ? 360 : 720),
         new THREE.ShaderMaterial({
           uniforms: { uTime: time },
           vertexShader: starVertexShader,
@@ -221,7 +336,9 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
       scene.add(stars);
     }
 
-    let heartGeometry: THREE.ExtrudeGeometry | undefined;
+    let heartGeometry: THREE.BufferGeometry | undefined;
+    let velvetTexture: THREE.DataTexture | undefined;
+    let heartLayoutScale = 1;
     let camila: THREE.Group | undefined;
     let felipe: THREE.Group | undefined;
     const hearts: Heart[] = [];
@@ -229,40 +346,33 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
     const pointer = new THREE.Vector2();
 
     if (!ambient) {
-      heartGeometry = new THREE.ExtrudeGeometry(createHeartShape(), {
-        depth: 0.48,
-        bevelEnabled: true,
-        bevelSegments: 5,
-        bevelSize: 0.16,
-        bevelThickness: 0.16,
-        curveSegments: 48,
-      });
-      heartGeometry.center();
+      heartGeometry = createPuffyHeartGeometry();
+      velvetTexture = createVelvetTexture();
 
       const buildHeart = (color: string, x: number, rotation: number) => {
         const group = new THREE.Group();
         const coreMaterial = new THREE.MeshPhysicalMaterial({
           color,
-          roughness: 0.23,
-          metalness: 0.08,
-          clearcoat: 1,
-          clearcoatRoughness: 0.1,
-          iridescence: 0.25,
-          sheen: 0.4,
+          roughness: 0.58,
+          metalness: 0,
+          clearcoat: 0.16,
+          clearcoatRoughness: 0.48,
+          sheen: 0.8,
+          sheenRoughness: 0.85,
           sheenColor: new THREE.Color(color).lerp(
             new THREE.Color("#ffffff"),
-            0.28,
+            0.35,
           ),
+          map: velvetTexture,
+          bumpMap: velvetTexture,
+          bumpScale: 0.06,
           emissive: new THREE.Color(color),
-          emissiveIntensity: 0.06,
-          transmission: 0.07,
-          thickness: 1.2,
+          emissiveIntensity: 0.04,
         });
         const core = new THREE.Mesh(heartGeometry, coreMaterial);
         const fuzzMaterial = new THREE.ShaderMaterial({
           uniforms: {
             uColor: { value: new THREE.Color(color) },
-            uTime: time,
             uGlow: { value: 1 },
           },
           vertexShader: fuzzVertexShader,
@@ -270,10 +380,9 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
           transparent: true,
           depthWrite: false,
           side: THREE.BackSide,
-          blending: THREE.AdditiveBlending,
         });
         const fuzz = new THREE.Mesh(heartGeometry, fuzzMaterial);
-        fuzz.scale.setScalar(1.055);
+        fuzz.scale.setScalar(1.025);
         group.add(core, fuzz);
         group.position.set(x, -1.25, 0);
         group.rotation.set(0.12, rotation, rotation * 0.28);
@@ -293,10 +402,13 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
       ({ group: felipe } = felipeHeart);
       hearts.push(camilaHeart, felipeHeart);
       scene.add(camila, felipe);
-      scene.add(new THREE.AmbientLight("#ffffff", 1.1));
-      const purpleLight = new THREE.PointLight("#8951ff", 26, 9);
+      scene.add(new THREE.AmbientLight("#ffffff", 0.55));
+      const keyLight = new THREE.DirectionalLight("#fff6ee", 2.4);
+      keyLight.position.set(-2, 4, 6);
+      scene.add(keyLight);
+      const purpleLight = new THREE.PointLight("#8951ff", 18, 9);
       purpleLight.position.set(-3.4, 1.6, 3.8);
-      const orangeLight = new THREE.PointLight("#ff8134", 25, 9);
+      const orangeLight = new THREE.PointLight("#ff8134", 18, 9);
       orangeLight.position.set(3.4, -0.5, 3.8);
       scene.add(purpleLight, orangeLight);
     }
@@ -306,6 +418,7 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
+      heartLayoutScale = Math.min(1, camera.aspect / 0.85);
       if (nebula) {
         const distance = camera.position.z - nebula.position.z;
         const visibleHeight =
@@ -364,8 +477,8 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
       time.value = elapsed;
       if (camila && felipe) {
         const embrace = Math.sin(elapsed * 0.35) * 0.12;
-        camila.position.x = -1.22 + embrace;
-        felipe.position.x = 1.22 - embrace;
+        camila.position.x = (-1.22 + embrace) * heartLayoutScale;
+        felipe.position.x = (1.22 - embrace) * heartLayoutScale;
         camila.position.y = -1.25 + Math.sin(elapsed * 0.48) * 0.09;
         felipe.position.y = -1.25 + Math.cos(elapsed * 0.44) * 0.09;
         camila.rotation.y = 0.37 + Math.sin(elapsed * 0.35) * 0.1;
@@ -383,11 +496,10 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
           0,
           1,
         );
-        heart.group.scale.setScalar(1 + easedHover * 0.14);
-        heart.coreMaterial.emissiveIntensity = 0.06 + easedHover * 0.34;
+        heart.group.scale.setScalar(heartLayoutScale * (1 + easedHover * 0.14));
+        heart.coreMaterial.emissiveIntensity = 0.04 + easedHover * 0.24;
         heart.fuzzMaterial.uniforms.uGlow.value = 1 + easedHover * 1.25;
       });
-      if (stars) stars.rotation.z = elapsed * 0.012;
       renderer.render(scene, camera);
       animationFrame = reducedMotion ? 0 : requestAnimationFrame(animate);
     };
@@ -408,6 +520,7 @@ export function GalaxyCanvas({ ambient = false }: { ambient?: boolean }) {
         clearHoveredHeart,
       );
       heartGeometry?.dispose();
+      velvetTexture?.dispose();
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
           object.geometry.dispose();

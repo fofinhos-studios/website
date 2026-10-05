@@ -1,28 +1,6 @@
 import { copy, type Locale, projects } from "../content";
 import styles from "./ProjectGallery.module.css";
 
-function ProjectPlaceholder({
-  accent,
-  title,
-}: {
-  accent: "orange" | "purple" | "both";
-  title: string;
-}) {
-  return (
-    <div
-      className={`${styles.placeholder} ${styles[accent]}`}
-      aria-hidden="true"
-    >
-      <div className={styles.orbit} />
-      <div className={styles.planet} />
-      <span>{title.slice(0, 1)}</span>
-      <i />
-      <i />
-      <i />
-    </div>
-  );
-}
-
 export function ProjectGallery({ locale }: { locale: Locale }) {
   const text = copy[locale];
   return (
@@ -44,7 +22,9 @@ export function ProjectGallery({ locale }: { locale: Locale }) {
             aria-label={`${text.visitProject}: ${project.title}`}
             key={project.id}
           >
-            <ProjectPlaceholder accent={project.accent} title={project.title} />
+            <div className={styles.artwork} aria-hidden="true">
+              <img className={styles.mark} src={project.logo} alt="" />
+            </div>
             <div className={styles.cardBody}>
               <p className={styles.tag}>{project.tag[locale]}</p>
               <h3>{project.title}</h3>

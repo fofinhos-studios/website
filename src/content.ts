@@ -3,9 +3,6 @@ export type Locale = "en" | "pt-BR";
 type Copy = {
   navProjects: string;
   languageLabel: string;
-  themeLabel: string;
-  lightTheme: string;
-  darkTheme: string;
   heroTitle: string;
   heroCta: string;
   visitProject: string;
@@ -19,9 +16,6 @@ export const copy: Record<Locale, Copy> = {
   en: {
     navProjects: "Projects",
     languageLabel: "Change language",
-    themeLabel: "Change theme",
-    lightTheme: "Use light theme",
-    darkTheme: "Use dark theme",
     heroTitle: "Fofinhos Studio",
     heroCta: "Projects",
     visitProject: "Visit project",
@@ -33,9 +27,6 @@ export const copy: Record<Locale, Copy> = {
   "pt-BR": {
     navProjects: "Projetos",
     languageLabel: "Mudar idioma",
-    themeLabel: "Mudar tema",
-    lightTheme: "Usar tema claro",
-    darkTheme: "Usar tema escuro",
     heroTitle: "Fofinhos Studio",
     heroCta: "Projetos",
     visitProject: "Visitar projeto",
@@ -47,9 +38,9 @@ export const copy: Record<Locale, Copy> = {
 };
 
 export type Project = {
-  id: "minigemu" | "gamingclock" | "hon";
+  id: "minigemu" | "asobi" | "hon" | "salary";
   url: string;
-  accent: "orange" | "purple" | "both";
+  logo: string;
   title: string;
   repository: string;
   description: Record<Locale, string>;
@@ -60,38 +51,52 @@ export const projects: Project[] = [
   {
     id: "minigemu",
     url: "https://minigemu.fofinhos.studio/",
-    accent: "orange",
-    title: "Minigemu",
-    repository: "daily-game-tracker",
+    logo: "/project-logos/minigemu.svg",
+    title: "minigēmu",
+    repository: "minigemu",
     description: {
-      en: "Track Wordle, Gamedle, Framed, and other daily games in one place.",
+      en: "Save daily game results and follow your activity, accuracy, and win rates.",
       "pt-BR":
-        "Acompanhe Wordle, Gamedle, Framed e outros jogos diários em um só lugar.",
+        "Salve resultados de jogos diários e acompanhe sua atividade, precisão e taxa de vitórias.",
     },
     tag: { en: "Daily game tracker", "pt-BR": "Rastreador de jogos diários" },
   },
   {
-    id: "gamingclock",
-    url: "https://gamingclock.fofinhos.studio/",
-    accent: "purple",
-    title: "GamingClock",
-    repository: "gamingclock",
+    id: "asobi",
+    url: "https://asobi.fofinhos.studio/",
+    logo: "/project-logos/asobi.svg",
+    title: "asobi",
+    repository: "asobi",
     description: {
-      en: "Schedule games from your backlog and finish them.",
-      "pt-BR": "Agende jogos do seu backlog e termine-os.",
+      en: "Turn your game backlog into a schedule that fits your available time.",
+      "pt-BR":
+        "Transforme seu backlog de jogos em um plano para o tempo que você tem.",
     },
     tag: { en: "Backlog planner", "pt-BR": "Planejador de backlog" },
   },
   {
     id: "hon",
-    url: "https://hon.fofinhos.studio",
-    accent: "both",
-    title: "Hon",
+    url: "https://hon.fofinhos.studio/",
+    logo: "/project-logos/hon.svg",
+    title: "hon",
     repository: "hon",
     description: {
-      en: "Plan your reading.",
-      "pt-BR": "Planeje suas leituras.",
+      en: "Plan books and audiobooks around your reading days and goals.",
+      "pt-BR":
+        "Planeje livros e audiolivros de acordo com seus dias e metas de leitura.",
     },
     tag: { en: "Reading planner", "pt-BR": "Planejador de leitura" },
+  },
+  {
+    id: "salary",
+    url: "https://salary.fofinhos.studio/",
+    logo: "/project-logos/salary.svg",
+    title: "tiny salary",
+    repository: "salary",
+    description: {
+      en: "Compare hourly, monthly, and annual salaries across currencies.",
+      "pt-BR": "Compare salários por hora, mês ou ano em diferentes moedas.",
+    },
+    tag: { en: "Salary calculator", "pt-BR": "Calculadora salarial" },
   },
 ];
